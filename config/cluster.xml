@@ -1,0 +1,26 @@
+<yandex>
+  <remote_servers>
+
+    <!-- cluster name -->
+    <reports>
+      
+      <shard>
+        <replica>
+          <host>ch1</host>
+          <port>9000</port>
+          <password></password>
+        </replica>
+      </shard>
+
+      <shard>
+        <replica>
+          <host>ch2</host>
+          <port>9000</port>
+          <password></password>
+        </replica>
+      </shard>
+
+    </reports>
+    
+  </remote_servers>
+</yandex>

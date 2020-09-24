@@ -1,0 +1,53 @@
+---
+version: '3.7'
+
+services:
+
+  ch_shard1:
+    image: yandex/clickhouse-server
+    hostname: ch1
+    ports:
+      - 127.0.0.1:8123:8123 # HTTP interface
+      - 127.0.0.1:9000:9000 # native client
+    networks:
+      - clickhouse
+    volumes:
+      - ./db/ch1_data:/var/lib/clickhouse # db storage
+      - ./config/cluster.xml:/etc/clickhouse-server/config.d/cluster.xml
+      - ./config/zookeeper.xml:/etc/clickhouse-server/config.d/zookeeper.xml
+    ulimits:
+      nofile:
+        soft: 262144
+        hard: 262144
+    depends_on:
+      - zookeeper
+
+  ch_shard2:
+    image: yandex/clickhouse-server
+    hostname: ch2
+    # We don't need exposed ports for second replica.
+    # In real production, any shard and replica are equivalent and are able for connections
+    # e.g. for chproxy
+    networks:
+      - clickhouse
+    volumes:
+      - ./db/ch2_data:/var/lib/clickhouse # db storage
+      - ./config/cluster.xml:/etc/clickhouse-server/config.d/cluster.xml
+      - ./config/zookeeper.xml:/etc/clickhouse-server/config.d/zookeeper.xml
+    ulimits:
+      nofile:
+        soft: 262144
+        hard: 262144
+    depends_on:
+      - zookeeper
+
+  zookeeper:
+    image: zookeeper
+    hostname: zookeeper
+    networks:
+      - clickhouse
+    restart: always
+
+networks:
+  clickhouse:
+    name: clickhouse
