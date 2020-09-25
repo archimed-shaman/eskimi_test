@@ -14,3 +14,4 @@ src/main/resources/application.conf
 .metals
 .cache
 .oracle_jre_usage
+generated

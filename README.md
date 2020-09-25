@@ -68,10 +68,19 @@ ch1 :)
 ```
 $ clickhouse-pipe --host eskimi_test_ch_shard1_1 --port 9000 --multiquery < sql/constructors.sql
 ```
-    
-  4. Generate data
-    
-  5. Insert data into ClickHouse:
+  4. Build data generator
 ```
-cat data.csv | clickhouse-pipe --host eskimi_test_ch_shard1_1 --port 9000 --query="INSERT INTO logs.visit_log_all FORMAT CSVWithNames"
+$ cd generator && sbt assembly
+```
+    
+  5. Generate data (e.g. two days), by default - 10000000 events per day
+```
+$ scala /home/archimed/dev/test_task/eskimi_test/generator/target/scala-2.13/generator-assembly-0.1.0-SNAPSHOT.jar 2020-09-01
+scala /home/archimed/dev/test_task/eskimi_test/generator/target/scala-2.13/generator-assembly-0.1.0-SNAPSHOT.jar 2020-09-02
+```
+    
+  6. Insert data into ClickHouse:
+```
+$ for i in $(ls generator/generated/2020-09-01/part_*); do cat $i | clickhouse-pipe --host eskimi_test_ch_shard1_1 --port 9000 --query="INSERT INTO logs.visit_log_all FORMAT CSVWithNames"; done
+$ for i in $(ls generator/generated/2020-09-02/part_*); do cat $i | clickhouse-pipe --host eskimi_test_ch_shard1_1 --port 9000 --query="INSERT INTO logs.visit_log_all FORMAT CSVWithNames"; done
 ```

@@ -12,7 +12,7 @@ CREATE TABLE IF NOT EXISTS logs.visit_log ON CLUSTER reports
     gender Int8,
     yob Int32,
     keywords Array(String),
-    site_id UInt64
+    site_id Int64
 )
 ENGINE = MergeTree()
 PARTITION BY toYYYYMM(event_date)

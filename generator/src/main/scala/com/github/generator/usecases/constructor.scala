@@ -8,7 +8,7 @@ trait RandVisitLogConstructor extends ConstructorComponent[VisitLog] {
   def constructor = new VisitLogConstructor
 
   class VisitLogConstructor extends Constructor {
-    def apply(day: Date): LazyList[VisitLog] = makeRandomSession(day)
+    override def apply(day: Date): LazyList[VisitLog] = makeRandomSession(day)
   }
 
   private def makeRandomSession(day: Date): LazyList[VisitLog] = {
