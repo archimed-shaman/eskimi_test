@@ -13,6 +13,7 @@ services:
       - clickhouse
     volumes:
       - ./db/ch1_data:/var/lib/clickhouse # db storage
+      - ./config/ch1/macros.xml:/etc/clickhouse-server/config.d/macros.xml
       - ./config/cluster.xml:/etc/clickhouse-server/config.d/cluster.xml
       - ./config/zookeeper.xml:/etc/clickhouse-server/config.d/zookeeper.xml
     ulimits:
@@ -32,6 +33,7 @@ services:
       - clickhouse
     volumes:
       - ./db/ch2_data:/var/lib/clickhouse # db storage
+      - ./config/ch2/macros.xml:/etc/clickhouse-server/config.d/macros.xml
       - ./config/cluster.xml:/etc/clickhouse-server/config.d/cluster.xml
       - ./config/zookeeper.xml:/etc/clickhouse-server/config.d/zookeeper.xml
     ulimits:
