@@ -46,13 +46,14 @@ Shard_N Replica_1 - Shard_N Replica_2
 
 # Run
 
-    1. Run ClickHouse & ZooKeper. Just run 
+  1. Run ClickHouse & ZooKeper. Just run 
+
 ```
 $ docker-compose up
 ``` 
 This command will download all necessary containers from DockerHub and launch one ZooKeeper and two ClickHouse servers with all necessary configs.
 
-    2. To simplify proceess, make some aliases: 
+  2. To simplify proceess, make some aliases: 
 ```
 $ alias clickhouse-client="docker run -it --rm --net clickhouse --link eskimi_test_ch_shard1_1:clickhouse-server yandex/clickhouse-client"
 $ alias clickhouse-pipe="docker run -a stdin -a stdout -i --rm --net clickhouse --link eskimi_test_ch_shard1_1:clickhouse-server yandex/clickhouse-client"
@@ -63,14 +64,14 @@ Connected to ClickHouse server version 20.9.2 revision 54439.
 ch1 :)
 ```
     
-    3. Create databases and tables. Just run sql script: 
+  3. Create databases and tables. Just run sql script: 
 ```
 $ clickhouse-pipe --host eskimi_test_ch_shard1_1 --port 9000 --multiquery < sql/constructors.sql
 ```
     
-    4. Generate data
+  4. Generate data
     
-    5. Insert data into ClickHouse:
+  5. Insert data into ClickHouse:
 ```
 cat data.csv | clickhouse-pipe --host eskimi_test_ch_shard1_1 --port 9000 --query="INSERT INTO logs.visit_log_all FORMAT CSVWithNames"
 ```
