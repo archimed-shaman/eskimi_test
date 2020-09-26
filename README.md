@@ -73,7 +73,7 @@ $ clickhouse-pipe --host eskimi_test_ch_shard1_1 --port 9000 --multiquery < sql/
 $ cd generator && sbt assembly
 ```
     
-  5. Generate data (e.g. two days), by default - 10000000 events per day.
+  5. Generate data (e.g. full 2020.09), by default - 10000000 events per day.
 ```
 $ for i in {01..30}; do scala generator/target/scala-2.13/generator-assembly-0.1.0-SNAPSHOT.jar 2020-09-$i 10000000; done
 2020-09-26 13:04:54.920 [main] INFO  com.github.generator.main$ - generator started with args [day: Tue Sep 01 00:00:00 MSK 2020; rows: 10000000; dir: generated]
