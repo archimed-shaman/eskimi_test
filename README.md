@@ -1,19 +1,31 @@
 # Solution
 
-# Advantages & disadvantages
+## Intro
 
-## Hadoop & Spark
+> ClickHouse is a fast open-source OLAP database management system. 
+> It is column-oriented and allows to generate analytical reports using SQL queries in real-time. 
+> // https://clickhouse.tech 
+\
+Technical task sounds like a typical task for analytics instrument, so I dare to offer ClickHouse-based solution.
 
-## ClickHouse
-
-### Advantages
-  - 
+### Advantages of ClickHouse
+  - You can store raw data and make additional tables/views. In combination with sampling, preaggregating, sharding it allows to make real-time API which responds in seconds. Yandex Metrika (similar to Google Analytics), SEMrush Traffic Analytics are proves.
+  - Mostly people is familiar with SQL unlikely with Spark. In Semrush analytics department had direct access to Traffic Analytics ClickHouse to perform researches.
+  - You don't need to develop new Spark job for each new request. SQL queries are more appropriate.
+  - It's free, open source and has a large community :) Developers are in-touch in different messengers.
   
-### Disadvantages
+### Disadvantages of ClickHouse
   - Weak scalability. CH has no well-working resharding mechanism, so you should strongly plan you data volumes.
   - Data skew. If you have data, sharded by domain, tons of events regarding google.com will be placed to the same shard.
   - No data mutations (no `UPDATE/DELETE`). You have only `DROP PARTITION`. It is not a real problem for analytics instruments.
   - No optimizations for `JOIN` operations. It is not a problem, if you make optiomizations 'by hand' in SQL query (e.g. filter by key).
+  - It may be hard to change table structures - you need to perform data migrations.
+
+### Conclusion
+
+Hadoop/Spark is more useful in case of various one-off researches which deals with heterogeneous data with no demand to execution time/latency. ClickHouse is good for real-time analytics instruments with defined set of reports (something like Google Analytics). The usual CH data flow includes preliminary data processing, e.g. with the help of Spark - it may help to parse, filter and uniformize data. \
+\
+[ClickHouse Documentation](https://clickhouse.tech/docs/en/)
 
 # Infrastructure
 
@@ -130,7 +142,9 @@ $ du -h --max-depth=1 generated
 $ for day in {01..30}; do for file in $(ls generator/generated/2020-09-$day/part_*); do cat $file | clickhouse-pipe --host eskimi_test_ch_shard1_1 --port 9000 --query="INSERT INTO logs.visit_log_all FORMAT CSVWithNames"; done; done
 ```
 
-  7. Now, let's check data
+# Data reports
+
+Now, let's check data
 ```
 ch1 :) select count() from logs.visit_log_all
 
@@ -144,13 +158,14 @@ FROM logs.visit_log_all
 1 rows in set. Elapsed: 0.013 sec.
 ```
 
-Check most visited sites:
+## Which are the most visited sites last month?
+
 ```
 SELECT 
     site_id,
     uniq(dmp_id) AS users,
     count() AS visits
-FROM logs.visit_log
+FROM logs.visit_log_all
 PREWHERE toStartOfMonth(event_date) = '2020-09-01'
 GROUP BY site_id
 ORDER BY users DESC
@@ -158,17 +173,139 @@ LIMIT 10
 SETTINGS max_threads = 8
 
 ┌─site_id─┬──users─┬─visits─┐
-│      -1 │ 279432 │ 406639 │
-│   12559 │  12139 │  12311 │
-│   12905 │  12110 │  12257 │
-│   12510 │  12098 │  12256 │
-│   12445 │  12087 │  12227 │
-│   12469 │  12079 │  12246 │
-│   12785 │  12062 │  12210 │
-│   12474 │  12062 │  12199 │
-│   12268 │  12056 │  12231 │
-│   12516 │  12046 │  12196 │
+│      -1 │ 559398 │ 811610 │
+│   12563 │  24150 │  24417 │
+│   12664 │  24066 │  24346 │
+│   12516 │  24062 │  24353 │
+│   12372 │  24049 │  24343 │
+│   12356 │  24032 │  24336 │
+│   12175 │  24030 │  24305 │
+│   12702 │  24013 │  24314 │
+│   12090 │  23979 │  24273 │
+│   12603 │  23979 │  24260 │
 └─────────┴────────┴────────┘
 
-10 rows in set. Elapsed: 9.824 sec. Processed 149.94 million rows, 3.00 GB (15.26 million rows/s., 305.24 MB/s.)
+10 rows in set. Elapsed: 34.330 sec. Processed 300.00 million rows, 6.00 GB (8.74 million rows/s., 174.77 MB/s.) 
+```
+
+It's not quite fast, but it is not optimized snapshot. Let's make pre-aggregated metrics for sites day-by-day. Distributed-to-distributed insert reshards data by siteID. It makes data imbalanced, e.g. for google. On the other hand, this makes possible some tricks, like `distributed_group_by_no_merge` option.
+```
+$ for day in {01..30}; do clickhouse-client --host eskimi_test_ch_shard1_1 --port 9000 --query="INSERT INTO logs.site_metrics_agr_all SELECT toDate(event_date) AS date, site_id, gender, country, city, uniqState(dmp_id) AS users_agr, countState() AS visits_agr FROM logs.visit_log_all PREWHERE date = '2020-09-$day' GROUP BY date, site_id, gender, country, city"; done
+```
+Now:
+```
+SELECT *
+FROM 
+(
+    SELECT 
+        toStartOfMonth(date) AS month,
+        site_id,
+        uniqMerge(users_agr) AS users,
+        countMerge(visits_agr) AS visits
+    FROM logs.site_metrics_agr_all
+    PREWHERE month = '2020-09-01'
+    GROUP BY 
+        month,
+        site_id
+    SETTINGS distributed_group_by_no_merge = 1, max_threads = 8, distributed_aggregation_memory_efficient = 1
+)
+ORDER BY users DESC
+LIMIT 10
+SETTINGS distributed_aggregation_memory_efficient = 1
+
+┌──────month─┬─site_id─┬──users─┬─visits─┐
+│ 2020-09-01 │      -1 │ 559398 │ 811610 │
+│ 2020-09-01 │   12563 │  24150 │  24417 │
+│ 2020-09-01 │   12664 │  24066 │  24346 │
+│ 2020-09-01 │   12516 │  24062 │  24353 │
+│ 2020-09-01 │   12372 │  24049 │  24343 │
+│ 2020-09-01 │   12356 │  24032 │  24336 │
+│ 2020-09-01 │   12175 │  24030 │  24305 │
+│ 2020-09-01 │   12702 │  24013 │  24314 │
+│ 2020-09-01 │   12090 │  23979 │  24273 │
+│ 2020-09-01 │   12603 │  23979 │  24260 │
+└────────────┴─────────┴────────┴────────┘
+
+10 rows in set. Elapsed: 13.368 sec. Processed 223.75 million rows, 36.67 GB (16.74 million rows/s., 2.74 GB/s.) 
+```
+
+Looks better. However, data was not generated perfectly - site_metrics_agr_all contains 223751273 entries, which is 74% of total data. Anyway, some data reduce and repartition made it faster twice. Also, rank is "heavy" request, which needs likely fullscan and usually requires mounthly precalculated table for real-time reports.
+
+## How many unique users we have who are from Lithuania are males and have visited siteId=37 in last month?
+
+```
+SELECT 
+    toStartOfMonth(date) AS month,
+    site_id,
+    uniqMerge(users_agr) AS users
+FROM logs.site_metrics_agr_all
+PREWHERE site_id = 12563
+WHERE (country = 'LI') AND (gender = 1)
+GROUP BY 
+    month,
+    site_id
+
+┌──────month─┬─site_id─┬─users─┐
+│ 2020-09-01 │   12563 │    36 │
+└────────────┴─────────┴───────┘
+
+1 rows in set. Elapsed: 0.050 sec. Processed 17.15 thousand rows, 1.16 MB (340.47 thousand rows/s., 22.95 MB/s.)
+```
+
+## How many unique users did not visit siteId=13 for the last 14 days?
+
+```
+SELECT 
+    uniq(dmp_id) AS visited,
+    uniqIf(dmp_id, mark = 0) AS non_visited
+FROM 
+(
+    SELECT 
+        dmp_id,
+        countIf(site_id = 12563) AS mark
+    FROM logs.visit_log_all
+    PREWHERE toDate(event_date) BETWEEN '2020-09-11' AND '2020-09-26'
+    GROUP BY dmp_id
+    SETTINGS distributed_group_by_no_merge = 1, max_threads = 8, distributed_aggregation_memory_efficient = 1
+)
+
+┌─visited─┬─non_visited─┐
+│  999657 │      987030 │
+└─────────┴─────────────┘
+
+1 rows in set. Elapsed: 3.306 sec. Processed 160.02 million rows, 3.20 GB (48.40 million rows/s., 968.01 MB/s.)
+```
+
+## Which keywords were mostly used last month?
+
+Let's find it as is. It is full scan by 300M rows. In real life, sampling or additional table/view can be applied.
+```
+SELECT 
+    keyword,
+    count() AS usage
+FROM 
+(
+    SELECT arrayJoin(keywords) AS keyword
+    FROM logs.visit_log_all
+    PREWHERE toStartOfMonth(event_date) = '2020-09-01'
+)
+GROUP BY keyword
+ORDER BY usage DESC
+LIMIT 10
+SETTINGS max_threads = 8
+
+┌─keyword─┬───usage─┐
+│ 405     │ 1623702 │
+│ 619     │ 1623508 │
+│ 498     │ 1623356 │
+│ 545     │ 1623331 │
+│ 239     │ 1623284 │
+│ 159     │ 1623243 │
+│ 973     │ 1623142 │
+│ 162     │ 1623127 │
+│ 733     │ 1623101 │
+│ 577     │ 1623011 │
+└─────────┴─────────┘
+
+10 rows in set. Elapsed: 25.374 sec. Processed 300.00 million rows, 22.86 GB (11.82 million rows/s., 901.00 MB/s.)
 ```

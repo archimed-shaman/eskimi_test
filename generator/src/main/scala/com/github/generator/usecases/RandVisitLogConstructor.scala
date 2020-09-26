@@ -7,13 +7,8 @@ trait RandVisitLogConstructor extends ConstructorComponent[VisitLog] {
   def constructor = new VisitLogConstructor
 
   class VisitLogConstructor extends Constructor {
-    override def apply(day: Date): IterableOnce[VisitLog] = {
-      val gen = () => RandVisitLogConstructor.makeRandomEvent(day)
-      // LazyList.continually(gen)
-      // RandVisitLogConstructor.makeStream(gen)
-      // Iterator.continually(gen())
-      Iterator.continually(gen())
-    }
+    override def apply(day: Date): IterableOnce[VisitLog] =
+      Iterator.continually(RandVisitLogConstructor.makeRandomEvent(day))
   }
 
 }
@@ -28,8 +23,6 @@ object RandVisitLogConstructor {
   private val maxKnownKeywords = 1000
 
   private val countryCodes = Locale.getISOCountries()
-
-  final def makeStream(g: () => VisitLog): LazyList[VisitLog] = g() #:: makeStream(g)
 
   final def makeRandomEvent(day: Date): VisitLog = {
     val uid = makeRandomUID(maxKnownUsers)
