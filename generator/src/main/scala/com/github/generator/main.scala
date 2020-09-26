@@ -3,6 +3,8 @@ package com.github.generator
 import java.io.File
 import java.text.SimpleDateFormat
 
+import scala.collection.parallel.CollectionConverters._
+
 import com.github.generator.usecases._
 import com.github.generator.infrastructure._
 import com.typesafe.scalalogging.LazyLogging
@@ -26,12 +28,17 @@ object main extends App with LazyLogging {
     outputDir.mkdirs()
   }
 
-  val generator = new StreamComposer[domain.VisitLog, String] with RandVisitLogConstructor with CSVWriter {
-    val dirName = output
-    val batchSize = 100000
-    val maxRows = rows
+  val batchSize = 1000000
+
+  (batchSize to rows by batchSize).par.map { batch: Int =>
+    val generator = new StreamComposer[domain.VisitLog](batchSize) with RandVisitLogConstructor with CSVWriter {
+      val dirName = output
+      val fileName = s"part_${batch}"
+    }
+
+    generator.run(day)
+    logger.info(s"batch $batch complete")
   }
 
-  generator.run(day)
   logger.info("generator stopped")
 }

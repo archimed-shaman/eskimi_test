@@ -8,7 +8,7 @@ case class VisitLog(
     city: Option[String] = None,
     gender: Option[Int] = None,
     yob: Option[Int] = None,
-    keywords: Option[List[Int]] = None,
+    keywords: Option[Array[Int]] = None,
     siteId: Option[Int] = None,
     eventDate: Date = new java.util.Date()
 )

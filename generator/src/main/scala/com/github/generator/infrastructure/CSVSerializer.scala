@@ -16,10 +16,9 @@ trait CSVWriter extends OutputComponent[domain.VisitLog] {
   def writer = new CSVWriterImpl
 
   val dirName: String
-  val batchSize: Int
-  val maxRows: Int
+  val fileName: String
 
-  implicit def ListEncoder[T]: CellEncoder[List[T]] = {
+  implicit def ListEncoder[T]: CellEncoder[Array[T]] = {
     CellEncoder.from(_.map(i => s"'${i}'").mkString("[", ",", "]"))
   }
 
@@ -34,46 +33,15 @@ trait CSVWriter extends OutputComponent[domain.VisitLog] {
 
   class CSVWriterImpl extends Writer {
 
-    override def apply(data: LazyList[domain.VisitLog]) = {
-      // writeBatch(data, batchSize)
+    override def apply(data: IterableOnce[domain.VisitLog]) = {
+      val out = new File(dirName, fileName)
+      val writer = out.asCsvWriter[domain.VisitLog](
+        rfc
+          .withHeader("dmp", "country", "city", "gender", "yob", "keywords", "site_id", "event_date")
+          .withQuotePolicy(CsvConfiguration.QuotePolicy.WhenNeeded)
+      )
 
-      data
-        .grouped(maxRows / batchSize)
-        .zipWithIndex
-        .map {
-          case (part, i) =>
-            // (batchSize to maxRows by batchSize).foreach { part =>
-            val out = new File(dirName, s"part_${(i + 1) * batchSize}.csv")
-            val writer = out.asCsvWriter[domain.VisitLog](
-              rfc
-                .withHeader("dmp", "country", "city", "gender", "yob", "keywords", "site_id", "event_date")
-                .withQuotePolicy(CsvConfiguration.QuotePolicy.WhenNeeded)
-            )
-
-            val ps = part.take(batchSize)
-            writer.write(ps).close()
-        }
+      writer.write(data).close()
     }
-
-    // @tailrec
-    // private def writeBatch(data: LazyList[domain.VisitLog], batchN: Int): Unit = batchN match {
-    //   case part if part > maxRows => ()
-    //   case part => {
-
-    //     val (head, tail) = data.splitAt(batchSize)
-
-    //     val out = new File(dirName, s"part_${part}.csv")
-    //     val writer = out.asCsvWriter[domain.VisitLog](
-    //       rfc
-    //         .withHeader("dmp", "country", "city", "gender", "yob", "keywords", "site_id", "event_date")
-    //         .withQuotePolicy(CsvConfiguration.QuotePolicy.WhenNeeded)
-    //     )
-
-    //     val ps = head.collect
-    //     writer.write(ps).close()
-
-    //     writeBatch(tail, batchN + batchSize)
-    //   }
-    // }
   }
 }

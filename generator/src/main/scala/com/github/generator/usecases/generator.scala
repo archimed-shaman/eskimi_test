@@ -2,28 +2,26 @@ package com.github.generator.usecases
 
 import java.util.Date
 
-trait ConstructorComponent[In] {
+trait ConstructorComponent[T] {
   def constructor: Constructor
 
   trait Constructor {
-    def apply(day: Date): LazyList[In]
+    def apply(day: Date): IterableOnce[T]
   }
 }
 
-trait OutputComponent[In] {
+trait OutputComponent[T] {
   def writer: Writer
 
   trait Writer {
-    def apply(data: LazyList[In])
+    def apply(data: IterableOnce[T])
   }
 }
 
-trait StreamComposer[In, Out] {
-  self: ConstructorComponent[In] with OutputComponent[In] =>
+class StreamComposer[T](batchSize: Int) {
+  self: ConstructorComponent[T] with OutputComponent[T] =>
 
   def run(day: Date) = {
-    writer.apply(make(day))
+    writer.apply(constructor(day).iterator.take(batchSize))
   }
-
-  private def make(day: Date): LazyList[In] = constructor(day) #::: make(day)
 }
