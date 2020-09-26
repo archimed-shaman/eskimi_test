@@ -1,0 +1,26 @@
+<yandex>
+  <remote_servers>
+
+    <!-- cluster name -->
+    <reports>
+      
+      <shard>
+        <replica>
+          <host>eskimi_test_ch_shard1_1</host>
+          <port>9000</port>
+          <password></password>
+        </replica>
+      </shard>
+
+      <shard>
+        <replica>
+          <host>eskimi_test_ch_shard2_1</host>
+          <port>9000</port>
+          <password></password>
+        </replica>
+      </shard>
+
+    </reports>
+    
+  </remote_servers>
+</yandex>

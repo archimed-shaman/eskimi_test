@@ -1,0 +1,17 @@
+id_rsa*
+.vault
+.ivy2
+.sbt
+.ensime
+.ensime_cache
+target
+.idea/*
+*.idea
+.idea*
+.bloop/
+application.kav.conf
+src/main/resources/application.conf
+.metals
+.cache
+.oracle_jre_usage
+generated
