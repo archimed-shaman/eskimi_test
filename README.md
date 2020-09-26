@@ -2,10 +2,10 @@
 
 ## Intro
 
-> ClickHouse is a fast open-source OLAP database management system. 
-> It is column-oriented and allows to generate analytical reports using SQL queries in real-time. 
-> // https://clickhouse.tech 
-\
+> ClickHouse is a fast open-source OLAP database management system. \
+It is column-oriented and allows to generate analytical reports using SQL queries in real-time. \
+// https://clickhouse.tech 
+
 Technical task sounds like a typical task for analytics instrument, so I dare to offer ClickHouse-based solution.
 
 ### Advantages of ClickHouse
