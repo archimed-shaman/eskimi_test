@@ -10,7 +10,7 @@ Technical task sounds like a typical task for analytics instrument, so I dare to
 
 ### Advantages of ClickHouse
   - You can store raw data and make additional tables/views. In combination with sampling, preaggregating, sharding it allows to make real-time API which responds in seconds. Yandex Metrika (similar to Google Analytics), SEMrush Traffic Analytics are proves.
-  - Mostly people is familiar with SQL unlikely with Spark. In Semrush analytics department had direct access to Traffic Analytics ClickHouse to perform researches.
+  - Mostly people is familiar with SQL unlikely with Spark. Analytics department of SEMrush had direct access to Traffic Analytics ClickHouse to perform researches.
   - You don't need to develop new Spark job for each new request. SQL queries are more appropriate.
   - It's free, open source and has a large community :) Developers are in-touch in different messengers.
   
