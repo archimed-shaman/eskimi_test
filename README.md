@@ -23,7 +23,7 @@ Technical task sounds like a typical task for analytics instrument, so I dare to
 
 ### Conclusion
 
-Hadoop/Spark is more useful in case of various one-off researches which deals with heterogeneous data with no demand to execution time/latency. ClickHouse is good for real-time analytics instruments with defined set of reports (something like Google Analytics). The usual CH data flow includes preliminary data processing, e.g. with the help of Spark - it may help to parse, filter and uniformize data. \
+Hadoop/Spark is more useful in case of various one-off researches which deals with heterogeneous data with no demand to execution time/latency. ClickHouse is good for real-time analytics instruments with defined set of reports, especially dealing with small data subsets (something like Google Analytics - there are a lot of analytics data, but reports are based on 'site' key). The usual CH data flow includes preliminary data processing, e.g. with the help of Spark - it may help to parse, filter and uniformize data. \
 \
 [ClickHouse Documentation](https://clickhouse.tech/docs/en/)
 
